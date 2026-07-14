@@ -38,19 +38,43 @@ const LOGO_BASE64 = require("./logo");
 // ---------------------------------------------------------------------------
 // Firebase Admin
 // ---------------------------------------------------------------------------
-function initAdmin() {
+// Initialized lazily and defensively so a bad/missing service account can't
+// crash the whole function at cold start (which would take down /health too).
+let _adminInitError = null;
+
+function ensureAdmin() {
   if (admin.apps.length) return;
   const raw = process.env.FIREBASE_SERVICE_ACCOUNT;
-  if (raw) {
-    const serviceAccount = JSON.parse(raw);
-    admin.initializeApp({ credential: admin.cert(serviceAccount) });
-  } else {
+  if (!raw) {
     // Falls back to GOOGLE_APPLICATION_CREDENTIALS (a file path) if set.
     admin.initializeApp();
+    return;
   }
+  const serviceAccount = JSON.parse(raw);
+  // Some hosts/paste flows leave the PEM newlines as literal "\n"; normalize
+  // them so admin.cert() gets a valid key.
+  if (typeof serviceAccount.private_key === "string") {
+    serviceAccount.private_key = serviceAccount.private_key.replace(/\\n/g, "\n");
+  }
+  admin.initializeApp({ credential: admin.cert(serviceAccount) });
 }
-initAdmin();
-const db = admin.firestore();
+
+try {
+  ensureAdmin();
+} catch (err) {
+  _adminInitError = err;
+  console.error("Firebase Admin init failed:", err && err.message);
+}
+
+// Throws a clean 500-able error if admin couldn't initialize.
+function requireDb() {
+  ensureAdmin();
+  return admin.firestore();
+}
+function requireAdminAuth() {
+  ensureAdmin();
+  return admin.auth();
+}
 
 // ---------------------------------------------------------------------------
 // Email
@@ -113,19 +137,20 @@ async function requireAuth(req, res, next) {
     return res.status(401).json({ error: "Missing auth token." });
   }
   try {
-    req.auth = await admin.auth().verifyIdToken(token);
+    req.auth = await requireAdminAuth().verifyIdToken(token);
     next();
   } catch (err) {
     return res.status(401).json({ error: "Invalid auth token." });
   }
 }
 
-app.get("/health", (_req, res) => res.json({ ok: true }));
+app.get("/health", (_req, res) =>
+  res.json({ ok: true, admin: admin.apps.length > 0 && !_adminInitError }));
 
 // --- Welcome email (called by the app right after sign-up) -----------------
 app.post("/welcome", requireAuth, async (req, res) => {
   try {
-    const snap = await db.collection("users").doc(req.auth.uid).get();
+    const snap = await requireDb().collection("users").doc(req.auth.uid).get();
     const data = snap.data() || {};
     const email = data.email || req.auth.email;
     if (!email) {
@@ -150,7 +175,7 @@ app.post("/connection-request", requireAuth, async (req, res) => {
     }
 
     // Only email if a genuine pending request exists (guards against abuse).
-    const reqSnap = await db
+    const reqSnap = await requireDb()
       .collection("users").doc(toUserId)
       .collection("connections").doc(fromUserId)
       .get();
@@ -160,8 +185,8 @@ app.post("/connection-request", requireAuth, async (req, res) => {
     }
 
     const [recipientSnap, requesterSnap] = await Promise.all([
-      db.collection("users").doc(toUserId).get(),
-      db.collection("users").doc(fromUserId).get(),
+      requireDb().collection("users").doc(toUserId).get(),
+      requireDb().collection("users").doc(fromUserId).get(),
     ]);
     const recipient = recipientSnap.data() || {};
     const requester = requesterSnap.data() || {};
@@ -193,7 +218,7 @@ app.post("/request-otp", async (req, res) => {
     // Don't leak whether the account exists.
     let exists = true;
     try {
-      await admin.auth().getUserByEmail(email);
+      await requireAdminAuth().getUserByEmail(email);
     } catch (_) {
       exists = false;
     }
@@ -201,7 +226,7 @@ app.post("/request-otp", async (req, res) => {
       return res.json({ ok: true });
     }
 
-    const ref = db.collection("passwordOtps").doc(otpDocId(email));
+    const ref = requireDb().collection("passwordOtps").doc(otpDocId(email));
     const existing = await ref.get();
     if (existing.exists) {
       const createdAt = existing.data().createdAt;
@@ -246,7 +271,7 @@ app.post("/reset-password", async (req, res) => {
       return res.status(400).json({ error: "Password must be at least 6 characters." });
     }
 
-    const ref = db.collection("passwordOtps").doc(otpDocId(email));
+    const ref = requireDb().collection("passwordOtps").doc(otpDocId(email));
     const snap = await ref.get();
     if (!snap.exists) {
       return res.status(404).json({ error: "No reset request found. Request a new code." });
@@ -271,13 +296,13 @@ app.post("/reset-password", async (req, res) => {
 
     let user;
     try {
-      user = await admin.auth().getUserByEmail(email);
+      user = await requireAdminAuth().getUserByEmail(email);
     } catch (_) {
       await ref.delete();
       return res.status(404).json({ error: "Account not found." });
     }
 
-    await admin.auth().updateUser(user.uid, { password: newPassword });
+    await requireAdminAuth().updateUser(user.uid, { password: newPassword });
     await ref.delete();
     res.json({ ok: true });
   } catch (err) {
