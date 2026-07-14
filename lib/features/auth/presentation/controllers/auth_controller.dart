@@ -8,7 +8,7 @@ import '../../data/auth_repository.dart';
 
 class AuthController extends ChangeNotifier {
   AuthController({required AuthRepository repository}) : _repository = repository {
-    _subscription = _repository.authStateChanges().listen(_onAuthStateChanged);
+    _subscription = _repository.userChanges().listen(_onAuthStateChanged);
   }
 
   final AuthRepository _repository;

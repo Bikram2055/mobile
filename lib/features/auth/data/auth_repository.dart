@@ -20,6 +20,11 @@ class AuthRepository {
 
   Stream<User?> authStateChanges() => _auth.authStateChanges();
 
+  /// Like [authStateChanges] but also emits on profile updates (e.g. after
+  /// [User.updateDisplayName]/[User.reload]) so a freshly set display name
+  /// propagates to the UI right after sign-up.
+  Stream<User?> userChanges() => _auth.userChanges();
+
   User? get currentUser => _auth.currentUser;
 
   Future<UserCredential> signInWithEmail({
