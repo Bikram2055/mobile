@@ -8,7 +8,7 @@ class AppConfig {
   /// Set it either by editing [_defaultEmailApiBaseUrl] below, or at build time
   /// with `--dart-define=EMAIL_API_BASE_URL=https://...` (which takes priority).
   /// While empty, the app runs fine but email features are disabled.
-  static const String _defaultEmailApiBaseUrl = '';
+  static const String _defaultEmailApiBaseUrl = 'https://mobile-indol-omega.vercel.app';
 
   static const String emailApiBaseUrl = String.fromEnvironment(
     'EMAIL_API_BASE_URL',
