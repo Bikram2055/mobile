@@ -31,7 +31,7 @@ android {
 
     defaultConfig {
         // Permanent Play Store application id.
-        applicationId = "com.azminds.expensetracker"
+        applicationId = "com.bikram.expense_tracker"
         minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode

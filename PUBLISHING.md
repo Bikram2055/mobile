@@ -1,7 +1,7 @@
 # Publishing Expense Tracker to Google Play
 
 ## App identity (done in code)
-- **Application ID:** `com.azminds.expensetracker` (permanent — never changes after first release)
+- **Application ID:** `com.bikram.expense_tracker` (permanent — never changes after first release)
 - **App name:** Expense Tracker
 - **Signing:** release builds are signed with the upload keystore via `android/key.properties`
 
@@ -26,11 +26,11 @@ keytool -list -v -keystore android/app/upload-keystore.jks -alias upload
 
 ## ⚠️ Firebase: register the new package (do this or auth may break)
 The app's package changed from `com.example.expense_tracker` to
-`com.azminds.expensetracker`. Firebase was set up for the old package, so:
+`com.bikram.expense_tracker`. Firebase was set up for the old package, so:
 
 1. [Firebase console](https://console.firebase.google.com) → project `expense-84f73`
    → ⚙️ **Project settings** → **Your apps** → **Add app → Android**.
-2. Package name: `com.azminds.expensetracker`.
+2. Package name: `com.bikram.expense_tracker`.
 3. Add the **SHA-1 and SHA-256** above.
 4. After you first upload to Play and enable **Play App Signing**, Play shows an
    *app signing* SHA-1/SHA-256 too — add **those** to Firebase as well (needed so

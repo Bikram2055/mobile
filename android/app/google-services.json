@@ -7,9 +7,9 @@
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:895551835032:android:42fb13a9d3658a5ea639ed",
+        "mobilesdk_app_id": "1:895551835032:android:bb4a842c6a9a8edfa639ed",
         "android_client_info": {
-          "package_name": "com.example.expense_tracker"
+          "package_name": "com.bikram.expense_tracker"
         }
       },
       "oauth_client": [],
