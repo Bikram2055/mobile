@@ -90,19 +90,25 @@ const OTP_TTL_MINUTES = 10;
 const OTP_RESEND_COOLDOWN_MS = 60 * 1000;
 const OTP_MAX_ATTEMPTS = 5;
 
+// Sanitize credentials: trim the email, and strip ALL whitespace from the app
+// password (Gmail app passwords are 16 chars with no spaces; stray spaces or a
+// pasted newline otherwise corrupt the SMTP AUTH command).
+const gmailUser = () => (process.env.GMAIL_EMAIL || "").trim();
+const gmailPass = () => (process.env.GMAIL_APP_PASSWORD || "").replace(/\s+/g, "");
+
 function transporter() {
   return nodemailer.createTransport({
     service: "gmail",
     auth: {
-      user: process.env.GMAIL_EMAIL,
-      pass: process.env.GMAIL_APP_PASSWORD,
+      user: gmailUser(),
+      pass: gmailPass(),
     },
   });
 }
 
 async function sendMail({ to, subject, html }) {
   await transporter().sendMail({
-    from: `"${FROM_NAME}" <${process.env.GMAIL_EMAIL}>`,
+    from: `"${FROM_NAME}" <${gmailUser()}>`,
     to,
     subject,
     html,
@@ -159,6 +165,13 @@ app.get("/health", (_req, res) => {
       .replace(/[A-Za-z0-9+/=_-]{16,}/g, "…")
       .slice(0, 200);
   }
+  // Safe diagnostics only (lengths/flags, never the values). A correct Gmail
+  // app password sanitizes to exactly 16 characters.
+  body.gmail = {
+    userSet: gmailUser().length > 0,
+    passLen: gmailPass().length,
+    passLooksValid: gmailPass().length === 16,
+  };
   res.json(body);
 });
 
