@@ -45,14 +45,20 @@ let _adminInitError = null;
 function ensureAdmin() {
   if (admin.apps.length) return;
   const raw = process.env.FIREBASE_SERVICE_ACCOUNT;
-  if (!raw) {
+  if (!raw || !raw.trim()) {
     // Falls back to GOOGLE_APPLICATION_CREDENTIALS (a file path) if set.
     admin.initializeApp();
     return;
   }
-  const serviceAccount = JSON.parse(raw);
-  // Some hosts/paste flows leave the PEM newlines as literal "\n"; normalize
-  // them so admin.cert() gets a valid key.
+  // Accept either raw JSON, or a base64-encoded JSON blob. Base64 is the most
+  // reliable form for dashboards because it has no quotes/newlines to mangle.
+  let jsonStr = raw.trim();
+  if (!jsonStr.startsWith("{")) {
+    jsonStr = Buffer.from(jsonStr, "base64").toString("utf8").trim();
+  }
+  const serviceAccount = JSON.parse(jsonStr);
+  // Some paste flows leave the PEM newlines as literal "\n"; normalize them so
+  // admin.cert() gets a valid key.
   if (typeof serviceAccount.private_key === "string") {
     serviceAccount.private_key = serviceAccount.private_key.replace(/\\n/g, "\n");
   }
@@ -144,8 +150,17 @@ async function requireAuth(req, res, next) {
   }
 }
 
-app.get("/health", (_req, res) =>
-  res.json({ ok: true, admin: admin.apps.length > 0 && !_adminInitError }));
+app.get("/health", (_req, res) => {
+  const ready = admin.apps.length > 0 && !_adminInitError;
+  const body = { ok: true, admin: ready };
+  if (!ready && _adminInitError) {
+    // Redact any long token-like runs so no key material leaks on this public URL.
+    body.reason = String(_adminInitError.message || _adminInitError)
+      .replace(/[A-Za-z0-9+/=_-]{16,}/g, "…")
+      .slice(0, 200);
+  }
+  res.json(body);
+});
 
 // --- Welcome email (called by the app right after sign-up) -----------------
 app.post("/welcome", requireAuth, async (req, res) => {
