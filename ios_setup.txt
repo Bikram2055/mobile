@@ -1,0 +1,35 @@
+GoogleService-Info.plist is the Firebase iOS configuration file. It tells your iPhone build which Firebase project to use (without it, Firebase Auth/Firestore won’t work on iOS).
+
+How to get it and add it:
+
+Open Firebase Console → your project (expense-84f73).
+Project settings (gear icon) → General → Your apps → iOS.
+If you don’t have an iOS app there yet, click Add app (iOS).
+Enter the iOS Bundle ID (this must match what you set in Xcode later), then continue.
+Download GoogleService-Info.plist.
+Copy it into your Flutter project at:
+GoogleService-Info.plist
+Open Runner.xcworkspace in Xcode:
+Drag GoogleService-Info.plist into the Runner folder in Xcode’s left sidebar
+Make sure Copy items if needed is checked
+Ensure it’s added to the Runner target
+After that you can run:
+
+flutter pub get
+cd ios && pod install && cd ..
+flutter run or flutter build ipa
+If you tell me what bundle id you want to use (example: com.yourname.expensetracker), I’ll point you to exactly where to set it in the iOS project so it matches Firebase.
+
+
+can i do it from this device??
+
+You can download the file from this device, but you can’t complete the iOS setup/build/install from this device (Ubuntu) because it needs macOS + Xcode.
+
+What you can do here now:
+
+Download GoogleService-Info.plist from Firebase Console (web browser) and save it.
+Keep it ready to copy into your repo later at GoogleService-Info.plist when you’re on the Mac.
+If you want to do it “from this device” without owning a Mac:
+
+Use an online Mac build service (Codemagic/Bitrise/GitHub Actions macOS runner) or rent a cloud Mac (MacStadium). You’d still need Apple signing, and you’d upload GoogleService-Info.plist there as a secret/file.
+

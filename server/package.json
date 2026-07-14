@@ -1,0 +1,21 @@
+{
+  "name": "expense-tracker-email-server",
+  "description": "Free-plan email backend for Expense Tracker (Express + Admin SDK + Gmail)",
+  "version": "1.0.0",
+  "main": "index.js",
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "start": "node index.js",
+    "dev": "node index.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.21.0",
+    "firebase-admin": "^12.7.0",
+    "nodemailer": "^6.9.15"
+  },
+  "private": true
+}
