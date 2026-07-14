@@ -17,6 +17,12 @@ const BRAND = {
   card: "#FFFFFF",
 };
 
+// Logo is served by the backend (GET /logo.png) and referenced by URL, so it
+// renders inline in Gmail rather than showing up as a broken attachment.
+const PUBLIC_BASE_URL = (process.env.PUBLIC_BASE_URL || "https://mobile-indol-omega.vercel.app")
+  .replace(/\/+$/, "");
+const LOGO_URL = `${PUBLIC_BASE_URL}/logo.png`;
+
 /**
  * Wraps body content in the shared responsive shell (header with logo +
  * footer). `preheader` is the hidden inbox-preview line.
@@ -41,7 +47,7 @@ function layout({ preheader, body }) {
                 <table role="presentation" cellpadding="0" cellspacing="0">
                   <tr>
                     <td style="padding-right:12px;" valign="middle">
-                      <img src="cid:applogo" width="40" height="40" alt="${BRAND.name}" style="display:block;border-radius:10px;">
+                      <img src="${LOGO_URL}" width="40" height="40" alt="${BRAND.name}" style="display:block;border-radius:10px;background:#ffffff;">
                     </td>
                     <td valign="middle">
                       <span style="font-family:'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:20px;font-weight:700;color:#ffffff;">${BRAND.name}</span>
@@ -84,6 +90,10 @@ function welcomeEmail({ name }) {
   const first = (name || "there").split(" ")[0];
   return {
     subject: `Welcome to ${BRAND.name}, ${first}! 🎉`,
+    text:
+      `Welcome aboard, ${first}!\n\n` +
+      `Your ${BRAND.name} account is ready. Create books, log expenses and ` +
+      `income by category, and explore interactive analytics. Happy budgeting!`,
     html: layout({
       preheader: `Your ${BRAND.name} account is ready.`,
       body: `
@@ -109,6 +119,10 @@ function welcomeEmail({ name }) {
 function otpEmail({ otp, minutes }) {
   return {
     subject: `Your ${BRAND.name} password reset code`,
+    text:
+      `Your ${BRAND.name} password reset code is ${otp}. ` +
+      `It expires in ${minutes} minutes. ` +
+      `If you didn't request this, ignore this email. Never share this code.`,
     html: layout({
       preheader: `Your password reset code is ${otp}.`,
       body: `
@@ -136,6 +150,11 @@ function connectionRequestEmail({ recipientName, requesterName, requesterEmail }
   const first = (recipientName || "there").split(" ")[0];
   return {
     subject: `${requesterName || "Someone"} wants to connect on ${BRAND.name}`,
+    text:
+      `Hi ${first}, ${requesterName || "a user"}` +
+      `${requesterEmail ? ` (${requesterEmail})` : ""} wants to connect with you ` +
+      `on ${BRAND.name} so you can share books. ` +
+      `Open the app and go to Profile > Connections to accept or decline.`,
     html: layout({
       preheader: `${requesterName || "Someone"} sent you a connection request.`,
       body: `

@@ -106,20 +106,13 @@ function transporter() {
   });
 }
 
-async function sendMail({ to, subject, html }) {
+async function sendMail({ to, subject, html, text }) {
   await transporter().sendMail({
     from: `"${FROM_NAME}" <${gmailUser()}>`,
     to,
     subject,
+    text,
     html,
-    attachments: [
-      {
-        filename: "logo.png",
-        content: LOGO_BASE64,
-        encoding: "base64",
-        cid: "applogo",
-      },
-    ],
   });
 }
 
@@ -175,6 +168,15 @@ app.get("/health", (_req, res) => {
   res.json(body);
 });
 
+// Serves the app logo so emails can reference it by URL (renders inline in
+// Gmail instead of appearing as a broken attachment).
+const LOGO_BUFFER = Buffer.from(LOGO_BASE64, "base64");
+app.get("/logo.png", (_req, res) => {
+  res.set("Content-Type", "image/png");
+  res.set("Cache-Control", "public, max-age=604800, immutable");
+  res.send(LOGO_BUFFER);
+});
+
 // --- Welcome email (called by the app right after sign-up) -----------------
 app.post("/welcome", requireAuth, async (req, res) => {
   try {
@@ -184,8 +186,8 @@ app.post("/welcome", requireAuth, async (req, res) => {
     if (!email) {
       return res.status(400).json({ error: "No email on account." });
     }
-    const { subject, html } = welcomeEmail({ name: data.displayName || req.auth.name });
-    await sendMail({ to: email, subject, html });
+    const { subject, html, text } = welcomeEmail({ name: data.displayName || req.auth.name });
+    await sendMail({ to: email, subject, html, text });
     res.json({ ok: true });
   } catch (err) {
     console.error("welcome error", err);
@@ -222,12 +224,12 @@ app.post("/connection-request", requireAuth, async (req, res) => {
       return res.status(400).json({ error: "Recipient has no email." });
     }
 
-    const { subject, html } = connectionRequestEmail({
+    const { subject, html, text } = connectionRequestEmail({
       recipientName: recipient.displayName,
       requesterName: requester.displayName,
       requesterEmail: requester.email,
     });
-    await sendMail({ to: recipient.email, subject, html });
+    await sendMail({ to: recipient.email, subject, html, text });
     res.json({ ok: true });
   } catch (err) {
     console.error("connection-request error", err);
@@ -275,8 +277,8 @@ app.post("/request-otp", async (req, res) => {
       expiresAt: new Date(Date.now() + OTP_TTL_MINUTES * 60 * 1000),
     });
 
-    const { subject, html } = otpEmail({ otp, minutes: OTP_TTL_MINUTES });
-    await sendMail({ to: email, subject, html });
+    const { subject, html, text } = otpEmail({ otp, minutes: OTP_TTL_MINUTES });
+    await sendMail({ to: email, subject, html, text });
     res.json({ ok: true });
   } catch (err) {
     console.error("request-otp error", err);
