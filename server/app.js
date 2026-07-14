@@ -58,11 +58,11 @@ function ensureAdmin() {
   }
   const serviceAccount = JSON.parse(jsonStr);
   // Some paste flows leave the PEM newlines as literal "\n"; normalize them so
-  // admin.cert() gets a valid key.
+  // admin.credential.cert() gets a valid key.
   if (typeof serviceAccount.private_key === "string") {
     serviceAccount.private_key = serviceAccount.private_key.replace(/\\n/g, "\n");
   }
-  admin.initializeApp({ credential: admin.cert(serviceAccount) });
+  admin.initializeApp({ credential: admin.credential.cert(serviceAccount) });
 }
 
 try {
