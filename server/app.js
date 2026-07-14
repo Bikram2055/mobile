@@ -34,6 +34,7 @@ const nodemailer = require("nodemailer");
 
 const { welcomeEmail, otpEmail, connectionRequestEmail } = require("./templates");
 const LOGO_BASE64 = require("./logo");
+const PRIVACY_HTML = require("./privacy");
 
 // ---------------------------------------------------------------------------
 // Firebase Admin
@@ -166,6 +167,23 @@ app.get("/health", (_req, res) => {
     passLooksValid: gmailPass().length === 16,
   };
   res.json(body);
+});
+
+// Public privacy policy (used in the Play Store listing).
+app.get(["/privacy", "/privacy.html"], (_req, res) => {
+  res.set("Content-Type", "text/html; charset=utf-8");
+  res.send(PRIVACY_HTML);
+});
+
+// Friendly root instead of a 404.
+app.get("/", (_req, res) => {
+  res.set("Content-Type", "text/html; charset=utf-8");
+  res.send(
+    '<!doctype html><meta charset="utf-8"><title>Expense Tracker</title>' +
+      '<body style="font-family:sans-serif;padding:40px;color:#1E1E2A">' +
+      "<h1>Expense Tracker</h1><p>Backend service is running.</p>" +
+      '<p><a href="/privacy">Privacy Policy</a></p></body>'
+  );
 });
 
 // Serves the app logo so emails can reference it by URL (renders inline in
