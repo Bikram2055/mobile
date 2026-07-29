@@ -58,6 +58,13 @@ android {
             } else {
                 signingConfigs.getByName("debug")
             }
+            // R8: shrink + optimize code and resources.
+            isMinifyEnabled = true
+            isShrinkResources = true
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro"
+            )
         }
     }
 }

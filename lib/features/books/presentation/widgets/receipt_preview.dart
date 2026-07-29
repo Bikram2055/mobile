@@ -25,10 +25,22 @@ class ReceiptPreview extends StatelessWidget {
     try {
       final trimmed = data.contains(',') ? data.split(',').last : data;
       final bytes = base64Decode(trimmed);
-      return Image.memory(
-        bytes,
-        fit: fit,
-        errorBuilder: (_, __, ___) => fallback,
+      // Downsample: decode the bitmap at (roughly) the size it's displayed at
+      // instead of full resolution, to save memory and improve performance.
+      return LayoutBuilder(
+        builder: (context, constraints) {
+          final dpr = MediaQuery.of(context).devicePixelRatio;
+          final cacheWidth = constraints.maxWidth.isFinite && constraints.maxWidth > 0
+              ? (constraints.maxWidth * dpr).round()
+              : null;
+          return Image.memory(
+            bytes,
+            fit: fit,
+            cacheWidth: cacheWidth,
+            filterQuality: FilterQuality.low,
+            errorBuilder: (_, __, ___) => fallback,
+          );
+        },
       );
     } catch (error, stackTrace) {
       debugPrint('Failed to decode receipt image: $error\n$stackTrace');
